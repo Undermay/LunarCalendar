@@ -1,0 +1,351 @@
+
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Calendar;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
+
+
+
+public class CalendarFrame extends JFrame implements ActionListener{
+	//定义组件
+	private JComboBox yearComboBox;//年组合框
+	private JComboBox monthComboBox;//月组合框
+	private JButton returnTodayBtn;//返回今日按钮
+	private JLabel [] weekLbls;//日历中星期表头按钮
+	private JButton [] dayBtns;//日历中天数按钮
+	private JLabel selectedDateLbl;//显示选中日期
+	private JLabel chineseYearLbl;//显示农历年
+	
+
+	
+	public CalendarFrame() {
+		// TODO Auto-generated method stub
+		//在构造方法中对组件初始化
+		yearComboBox = new JComboBox();//年组合框
+		monthComboBox = new JComboBox();
+		returnTodayBtn = new JButton("Return Today");
+		String [] week = {"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"};
+		weekLbls = new JLabel[7];//表头初始化
+		//给每个weeklbls数组的每个元素赋值
+		for(int i=0 ; i<weekLbls.length ; i++) {
+			weekLbls[i] = new JLabel(week[i]);
+			//设置标签内容水平居中
+			weekLbls[i].setHorizontalAlignment(JLabel.CENTER);
+		}
+		//给显示天的按钮初始化
+		dayBtns = new JButton[42];
+		for(int i=0 ; i<dayBtns.length ; i++) {
+			dayBtns[i] = new JButton( );
+			//为每个显示天的按钮添加监听事件
+			dayBtns[i].addActionListener(this::actionPerformed);
+		}
+		//选中日期标签初始化
+		selectedDateLbl = new JLabel("The Selected Date");
+		//选中农历标签初始化
+		chineseYearLbl = new JLabel("The Lunar Year");
+		
+		/**把组件添加到Frame框架中，把年组合框，月组合框，
+		 * 返回今日按钮添加到一个Jpanel面板中，
+		 * 再把面板添加到框架中 */
+		JPanel yearMonthPanel = new JPanel();
+		yearMonthPanel.add(yearComboBox);//添加年组合框
+		yearMonthPanel.add(new JLabel(" Year "));
+		yearMonthPanel.add(monthComboBox);//添加月组合框
+		yearMonthPanel.add(new JLabel(" Month "));
+		yearMonthPanel.add(returnTodayBtn);//添加返回今日按钮
+		//把面板添加到框架中
+		add(yearMonthPanel, BorderLayout.NORTH);
+		
+		//先创建一个Jpanel面板，放星期几及日历中的天数
+		JPanel dayPanel = new JPanel();
+		//设置该面板为网格状
+		dayPanel.setLayout( new GridLayout(7,7,8,8));
+		//设置dayPanel的边框
+		dayPanel.setBorder(new EmptyBorder(10,20,10,20));//上、左、下、右
+		//向daypanel中添加表头
+		for(int i=0 ; i<weekLbls.length ; i++) {
+			dayPanel.add(weekLbls[i]);
+		}
+		//在添加中间天数的表头
+		for(int i=0 ; i<dayBtns.length ; i++) {
+			dayPanel.add(dayBtns[i]);
+		}
+		//把面板添加到框架中
+		add(dayPanel, BorderLayout.CENTER);
+		//定义Panel面板保存选中日期及农历年
+		JPanel soutPanel = new JPanel();
+		soutPanel.add(selectedDateLbl);//添加选中当前日期
+		soutPanel.add(chineseYearLbl);//添加农历年
+		//把面板添加到Frame框架中
+		add(soutPanel, BorderLayout.SOUTH);
+		
+		
+		
+		
+		/********************************************************/
+		//设置Frame窗口相关属性
+		//设置标题
+		setTitle("Jy_Chow's_Perpetual_Calendar");
+		//取消窗口大小
+		setSize(600,360);
+		//取消窗口大小的调整
+		setResizable(false);
+		//设置窗口运行后在屏幕中央
+		setLocationRelativeTo(null);
+		//关闭窗口退出程序
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		//显示窗口
+		setVisible(true);	
+		
+		/**********************************************/
+		//加载初始化数据
+		loadInitialData();
+		
+		//给组合框添加Action事件监听器
+		yearComboBox.addActionListener(this::actionPerformed);
+		monthComboBox.addActionListener(this::actionPerformed);
+		//给返回今日添加事件监听器
+		returnTodayBtn.addActionListener(this::actionPerformed);
+		
+		
+	}
+	private Calendar calendar = Calendar.getInstance();
+	private int currentYear = calendar.get(Calendar.YEAR);
+	private int currentMonth = calendar.get(Calendar.MONTH);
+	private int currentDay = calendar.get(Calendar.DAY_OF_MONTH);
+	private int max_year = currentYear + 100;//年组合框中最大年份
+	private int selectDay;//保存选中日期
+	private JButton oldSelectBtn;//前按钮
+	private Color oldColor;//保存前按钮颜色
+	//加载初始化数据
+	private void loadInitialData() {
+		//给年组合框初始化
+		for(int i=1900 ; i< max_year ; i++) {
+			yearComboBox.addItem(i + "");
+		}
+		//设置年组合狂默认值为当年
+		yearComboBox.setSelectedItem(currentYear + "");
+		
+		//给月组合框初始化
+		for(int i=1 ; i<=12 ; i++) {
+			monthComboBox.addItem(i + "");
+		}
+		//设置月组合框默认值为当月
+		monthComboBox.setSelectedIndex(currentMonth );
+		
+		//设置当前选中日期
+		selectDay = currentDay;
+		
+		
+		//给当前月的天数按钮初始化数据
+		setDayBtns();
+		//显示当前日期与农历年
+		showSouthPanel();
+	}
+	
+	//对于农历年以及当前选中日期模块的方法
+	private void showSouthPanel() {
+		Object yearObj = yearComboBox.getSelectedItem();
+		Object monthObj = monthComboBox.getSelectedItem();
+		selectedDateLbl.setText(yearObj.toString() + "-Year-" + monthObj.toString() + "-Month-" + selectDay + "-Day");
+		chineseYearLbl.setText(getLunarCalendar(Integer.parseInt(yearObj.toString())));
+	
+	}
+	private void setDayBtns() {//P15
+		//获得年组合框和月组合框中选择的年和月
+		Object selectYearItem = yearComboBox.getSelectedItem();
+		Object selectedMonthItem = monthComboBox.getSelectedItem();
+		//把获得的年月对象转换为int整数
+		int selectYear = Integer.parseInt(selectYearItem.toString().trim());
+		int selectMonth = Integer.parseInt(selectedMonthItem.toString().trim());
+		//计算本月一号是星期几,0表示星期日
+		int weekday = getWeekDay(selectYear, selectMonth, 1);
+		//计算本月天数
+		int monthDays = getMonthDays(selectYear, selectMonth);
+		//设置本月天数
+		int day = 1;
+		int from = weekday == 0 ? 6 : weekday - 1;//此处原为 0 ？ 6  bug!!!!!
+		int count = from;
+		for(int i=from ; i<from + monthDays ; i++) {
+			dayBtns[i].setText( day + "");
+			dayBtns[i].setActionCommand("C");//当前月
+			dayBtns[i].setForeground(Color.BLACK);
+			dayBtns[i].setBackground(null);
+			//没设置一个按钮就开始计数
+			count++;
+			if(count % 7 ==6 || count % 7 == 0) {
+				dayBtns[i].setForeground(Color.RED);
+			}
+			//判断day是否为选中日期
+			if(day == selectDay) {
+				//先保存原来的按钮数据
+				oldSelectBtn = dayBtns[i];
+				oldColor = dayBtns[i].getForeground();
+				dayBtns[i].setForeground(Color.BLUE);
+				dayBtns[i].setBackground(Color.CYAN);
+				
+			}
+			day++;
+		}
+		/***************************************************/
+		//设置上个月天数按钮
+		int preMonthDays = 0;
+		if(selectMonth > 1) {
+			//计算上个月的天数
+			preMonthDays = getMonthDays(selectYear, selectMonth - 1);
+		}else {
+			//当前月是1月，则上个月为去年的12月
+			preMonthDays = getMonthDays(selectYear-1,12);
+		}
+		//计算上个月从那天开始显示
+		day = preMonthDays - from + 1;
+		for(int i=0 ; i<from  ; i++) {
+			dayBtns[i].setText(day + "");
+			dayBtns[i].setActionCommand("P");
+			dayBtns[i].setForeground(Color.gray);//设置上个月为灰色
+			dayBtns[i].setBackground(null);
+			day++;
+		}
+		/**********************************************/
+		//计算下个月的天数
+		day = 1;
+		for(int i = from + monthDays  ; i< dayBtns.length ; i++) {
+			dayBtns[i].setText(day + "");
+			dayBtns[i].setActionCommand("N");
+			dayBtns[i].setForeground(Color.gray);
+			dayBtns[i].setBackground(null);
+			day++;
+		}
+		
+		
+	}
+	/***********重写Action Listener接口的抽象方法，用于事件处理*******/
+	@Override
+	public void actionPerformed(ActionEvent e) { 
+		//如果是年组合框或月组合框，调用setDaybtns()方法重新设置按钮现实的文本
+		if(e.getSource() == yearComboBox || e.getSource() == monthComboBox) {
+			setDayBtns();
+			//刷新当前选中日期
+			showSouthPanel();
+		}else if(e.getSource() == returnTodayBtn){ 
+			//把选中日期还原为当前默认日期
+			selectDay = currentDay;
+			//把年组合框还原
+			yearComboBox.setSelectedItem(currentYear + "");
+			//把月组合框还原
+			monthComboBox.setSelectedIndex(currentMonth);
+		}else {
+			//获得事件原按钮
+			JButton selectDayBtn = (JButton)e.getSource();
+			
+			//还原原来的颜色
+			oldSelectBtn.setForeground(oldColor);
+			oldSelectBtn.setBackground(null);
+			//保存当前选择按钮数据
+			oldSelectBtn = selectDayBtn;
+			oldColor = selectDayBtn.getForeground();
+			//设置选中按钮的颜色
+			selectDayBtn.setForeground(Color.BLUE);
+			selectDayBtn.setBackground(Color.CYAN);
+			
+			//获得单击按钮文本
+			String dayStr = selectDayBtn.getText();
+			//设置选中日期
+			selectDay = Integer.parseInt(dayStr);
+			//获得当前年当前月 216 217
+			int selectYear = Integer.parseInt(yearComboBox.getSelectedItem().toString());
+			int selectMonth = Integer.parseInt(monthComboBox.getSelectedItem().toString());
+			//获得选中按钮的Action Command
+			String actionCommand = selectDayBtn.getActionCommand();
+			
+			//判断日期为上个月还是下个月还是当月
+			if("P".equalsIgnoreCase(actionCommand)) {//上个月
+				if(selectMonth > 1) {
+					//切换到上个月
+					monthComboBox.setSelectedItem(selectMonth - 1 + "");
+				}else {
+					//当前是一月，切换到去年的12月
+					if(selectYear > 1900) {
+						yearComboBox.setSelectedItem(selectYear - 1 + "");
+						monthComboBox.setSelectedItem("12");
+					}
+				}
+			}else if("N".equalsIgnoreCase(actionCommand)) {//下个月
+				//切换到下个月
+				if(selectMonth < 12) {
+					monthComboBox.setSelectedItem(selectMonth + 1 +"");		
+				}else {
+					//当前是12月，需要切换到下一年
+				
+					yearComboBox.setSelectedItem(selectYear + 1 + "");
+					monthComboBox.setSelectedItem("1");
+				}
+			
+			}	
+			
+			//刷新
+			showSouthPanel();
+		}
+	}
+	
+	
+
+	
+	//定义方法，返回指定年农历年
+	public static String getLunarCalendar(int year){
+		String[] tiangan = {"甲","乙","丙","丁","戊","己","庚","辛","壬","癸"};
+		String[] dizhi = {"子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"};
+		String[] anmials = {"[鼠]年","[牛]年","[虎]年","[兔]年","[龙]年","[蛇]年","[马]年","[羊]年","[猴]年","[鸡]年","[狗]年","[猪]年"};
+		int tianganIndex = ((year - 1900) % 10 + 6) % 10;
+		int dizhiIndex = (year - 1900) % 12;
+		return tiangan[tianganIndex] + dizhi[dizhiIndex] + anmials[dizhiIndex];
+	}
+	
+	public static int getWeekDay(int year, int month, int day){
+		int sum = 0;
+		for(int i=1900 ; i<year ; i++){
+		
+			sum += isleap(i) ? 366 : 365;
+		}
+		for(int i=1 ; i<month ; i++){
+			sum += getMonthDays(year, i);
+		}
+		sum += day;
+		return sum % 7;
+	}
+	
+	public static int getMonthDays(int year, int month){
+		if(month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12) {
+			return 31;
+		}else if(month == 4 || month == 6 || month == 9 || month == 11) {
+			return 30;
+		}else if(month == 2){
+			if(isleap(year)) {
+				return 29;
+			}else {
+				return 28;
+			}
+		}
+		return 0;
+	}
+	public static boolean isleap(int year) {
+		return year % 4 == 0 && year % 100 == 0 || year % 400 == 0;
+	}
+
+	
+}
+
+
+
+
+
+
+
+
